@@ -151,10 +151,10 @@ async def test_scroll_pagination(monkeypatch):
 
 async def test_event_query_body(monkeypatch):
     fake = FakeApi()
-    await _call(monkeypatch, fake, "avanan_query_events", {"severities": ["high"], "scopes": ["farm1:acme"]})
+    await _call(monkeypatch, fake, "avanan_query_events", {"severities": ["high"], "scopes": ["farm1:example"]})
     req = fake.api()[0]
     assert (req.method, req.url.path) == ("POST", "/v1.0/event/query")
-    assert json.loads(req.content) == {"requestData": {"scopes": ["farm1:acme"], "severities": ["high"]}}
+    assert json.loads(req.content) == {"requestData": {"scopes": ["farm1:example"], "severities": ["high"]}}
 
 
 async def test_search_body(monkeypatch):
