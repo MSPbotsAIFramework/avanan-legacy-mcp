@@ -87,6 +87,9 @@ class AvananCredentials:
     secret: str
     region: str = DEFAULT_REGION
     token: str | None = None  # optional pre-issued access token
+    # Set when a header value is malformed: tools then return invalid_argument
+    # instead of calling Avanan, while tools/list still works.
+    header_error: str | None = None
 
     def __repr__(self) -> str:  # never leak secrets into logs or tracebacks
         return f"AvananCredentials(app_id=<redacted>, secret=<redacted>, region={self.region!r})"
@@ -113,6 +116,7 @@ class AvananClient:
     def __init__(self, credentials: AvananCredentials, http_client: httpx.AsyncClient | None = None):
         self._credentials = credentials
         self._http = http_client
+        self.header_error = credentials.header_error
         self._token: str | None = credentials.token
         self.host = REGION_HOSTS[credentials.region]
         self.base_url = f"https://{self.host}/{API_VERSION}"

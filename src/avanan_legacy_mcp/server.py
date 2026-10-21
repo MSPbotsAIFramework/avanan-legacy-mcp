@@ -24,7 +24,7 @@ from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from .api_client import AvananClient, AvananCredentials
-from .config import REGION_HOSTS, Settings, resolve_region
+from .config import DEFAULT_REGION, REGION_HOSTS, Settings, resolve_region
 
 HEADER_APP_ID = "X-Avanan-App-Id"
 HEADER_SECRET = "X-Avanan-Secret"
@@ -83,7 +83,8 @@ def _header(request: Request, name: str) -> str:
 class GatewayCredentialsMiddleware:
     """Reads X-Avanan-* headers on /mcp requests into the request context.
 
-    Missing required headers -> 401 listing them; unknown region -> 400.
+    Missing required headers -> 401 listing them. An unknown region does not block
+    the request (tools/list must work with any values); tools report it instead.
     """
 
     def __init__(self, app: ASGIApp):
@@ -113,19 +114,13 @@ class GatewayCredentialsMiddleware:
             )(scope, receive, send)
             return
 
+        header_error = None
         if region is None:
-            await JSONResponse(
-                {
-                    "error": "Invalid region",
-                    "message": f"{HEADER_REGION} must be one of: {', '.join(REGION_HOSTS)}",
-                    "allowed_values": list(REGION_HOSTS),
-                },
-                status_code=400,
-            )(scope, receive, send)
-            return
+            header_error = f"{HEADER_REGION} must be one of: {', '.join(REGION_HOSTS)}"
+            region = DEFAULT_REGION
 
         request_id = (request.headers.get("x-request-id") or "").strip()[:64] or uuid.uuid4().hex[:12]
-        creds_token = _credentials_var.set(AvananCredentials(app_id, secret, region, token))
+        creds_token = _credentials_var.set(AvananCredentials(app_id, secret, region, token, header_error))
         rid_token = request_id_var.set(request_id)
         try:
             await self.app(scope, receive, send)

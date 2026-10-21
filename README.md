@@ -36,7 +36,8 @@ Where to get them:
 
 Every request is signed: `x-av-sig` is the SHA-256 hex digest of the Base64 of
 request id + app id + date (+ request path and query) + secret. A request to `/mcp` without the
-required headers gets HTTP 401 listing them; an unknown region gets HTTP 400.
+required headers gets HTTP 401 listing them. An unknown region does not block `tools/list`; tool
+calls then return an `invalid_argument` error naming the allowed regions.
 
 ## Tools
 
